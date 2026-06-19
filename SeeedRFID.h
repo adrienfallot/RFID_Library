@@ -1,10 +1,15 @@
 /*
     SeeedRFID.h
-    A library for RFID moudle.
+    A library for RFID module. This revised version now decodes cards (or badges) that transmit 14 bytes, whereas the previous version handled only 5 bytes.
 
-    Copyright (c) 2008-2014 seeed technology inc.
-    Author      : Ye Xiaobo(yexiaobo@seeedstudio.com)
-    Create Time: 2014/2/20
+    original library by :
+     - Copyright (c) 2008-2014 seeed technology inc.
+     - Author      : Ye Xiaobo(yexiaobo@seeedstudio.com)
+     - Create Time: 2014/2/20
+    
+    modified library by : 
+     - Author      : Adrien FALLOT (dev@adrienfallot.fr)
+     - Modified Time: 2026/06/19
 
     The MIT License (MIT)
 
@@ -54,11 +59,13 @@
 #include <SoftwareSerial.h>
 #include "Arduino.h"
 
+#define EXPECTED_DATA_LENGTH 12
+
 struct RFIDdata {
     int dataLen;
-    byte chk;
+    byte chk;   // XOR checksum
     boolean valid;
-    unsigned char raw[5];
+    unsigned char raw[EXPECTED_DATA_LENGTH]; // Data and checksum
 };
 
 enum RFIDType {
@@ -68,9 +75,10 @@ enum RFIDType {
 
 class SeeedRFID {
   private:
-    SoftwareSerial* _rfidIO;  // software serail
+    SoftwareSerial* _rfidIO;  // software serial
     RFIDdata _data;
     RFIDType _type;
+    int rawToHex(char ASCII);
     boolean checkBitValidationUART();
     boolean read();
   public:

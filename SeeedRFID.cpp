@@ -1,10 +1,15 @@
 /*
     SeeedRFID.cpp
-    A library for RFID moudle.
+    A library for RFID module. This revised version now decodes cards (or badges) that transmit 14 bytes, whereas the previous version handled only 5 bytes.
 
-    Copyright (c) 2008-2014 seeed technology inc.
-    Author      : Ye Xiaobo(yexiaobo@seeedstudio.com)
-    Create Time: 2014/2/20
+    original library by :
+     - Copyright (c) 2008-2014 seeed technology inc.
+     - Author      : Ye Xiaobo(yexiaobo@seeedstudio.com)
+     - Create Time: 2014/2/20
+    
+    modified library by : 
+     - Author      : Adrien FALLOT (dev@adrienfallot.fr)
+     - Modified Time: 2026/06/19
 
     The MIT License (MIT)
 
@@ -67,26 +72,66 @@ SeeedRFID::SeeedRFID(int rxPin, int txPin) {
 SeeedRFID::~SeeedRFID() {
 }
 
+/* 
+    Convert raw value to corresponding HEX value of char in ASCII
+	Examples: 
+		- raw 48 is char '1' in ASCII which is 0x01 in HEX
+		- raw 65 is char 'A' in ASCII which is 0x10 in HEX
+*/
+int SeeedRFID::rawToHex(char ASCII)
+{
+	if(ASCII > 47 && ASCII < 58) { // ASCII number 0-9
+		return ASCII-48;
+	}
+	else if(ASCII > 64 && ASCII < 71) { // ASCII Letters A-F
+		return ASCII-55;
+	}
+}
 
+/*
+    Check if data is valid using checksum (and right length)
+    XOR checksum == XOR data 
+*/
 boolean SeeedRFID::checkBitValidationUART() {
-    _data.valid = (5 == _data.dataLen && (_data.raw[4] == _data.raw[0]^_data.raw[1]^_data.raw[2]^_data.raw[3]));
+    if (EXPECTED_DATA_LENGTH != _data.dataLen) {
+        return false;
+    }
+
+    int dataXOR = 0;
+    for (int i = 0 ; i <= 9 ; i ++) { // Ignore checksum bytes
+        dataXOR ^= rawToHex(_data.raw[i]);
+    }
+
+    // XOR checksum == XOR data
+    _data.valid = _data.chk == dataXOR;
     return _data.valid;
 }
+
 boolean SeeedRFID::read() {
 
+    _data.chk = 0;
 
     if (_data.dataLen != 0) {
         _data.dataLen = 0;
     }
 
     while (_rfidIO->available()) {
-        _data.raw[_data.dataLen++] = _rfidIO->read();
+        char byteReceived = _rfidIO->read();
+        if (byteReceived == 2 || byteReceived == 3) { //Ignore start, stop bytes
+            continue;
+        }
+        else if (_data.dataLen >= 10) { // checksum bytes
+            _data.chk ^= rawToHex(byteReceived);
+        }
+        _data.raw[_data.dataLen++] = byteReceived;
+
         #ifdef DEBUG
         Serial.println("SeeedRFID:read() function, and the RFID raw data: ");
         for (int i = 0; i < _data.dataLen; ++i) {
             Serial.println();
             Serial.print(_data.raw[i], HEX);
             Serial.print('\t');
+            Serial.print(rawToHex(_data.raw[i]));
         }
         Serial.println();
         #endif
@@ -101,7 +146,7 @@ boolean SeeedRFID::isAvailable() {
         case RFID_UART:
             return SeeedRFID::read();
             break;
-        case RFID_WIEGAND:
+        case RFID_WIEGAND: //no support of the wiegand protocol yet.
             return false;
             break;
         default:
@@ -120,27 +165,18 @@ RFIDdata SeeedRFID::data() {
     }
 }
 
+/*
+    Retrieve engraved card number by converting the last four hexadecimal bytes of data to base-ten.
+*/
 unsigned long SeeedRFID::cardNumber() {
-    // unsigned long myZero = 255;
 
     unsigned long sum = 0;
-    if (0 != _data.raw[0]) {
-        // _data.raw[0] = 	_data.raw[0] & myZero;
-        sum = sum + _data.raw[0];
-        sum = sum << 24;
+    for (int i = 2; i < _data.dataLen - 2; ++i) { // Ignore constructor identifier and checksum bytes
+		sum += rawToHex(_data.raw[i]);
+        if (i != _data.dataLen - 3) { // Ignore checksum bytes and last data byte
+			sum = sum << 4;
+		}
     }
-    // _data.raw[1] = 	_data.raw[1] & myZero;
-    sum = sum + _data.raw[1];
-    sum = sum << 16;
-
-    unsigned long sum2 = 0;
-    // _data.raw[2] = 	_data.raw[2] & myZero;
-    sum2 = sum2  + _data.raw[2];
-    sum2 = sum2 << 8;
-    // _data.raw[3] = 	_data.raw[3] & myZero;
-    sum2 = sum2  + _data.raw[3];
-
-    sum = sum + sum2;
 
     #ifdef DEBUG
     Serial.print("cardNumber(HEX): ");

@@ -1,7 +1,7 @@
-RFID Library  [![Build Status](https://travis-ci.com/Seeed-Studio/RFID_Library.svg?branch=master)](https://travis-ci.com/Seeed-Studio/RFID_Library)
+RFID Library (14 bytes)
 ============
 
-125Khz RFID library for Arduino. 
+This revised version now decodes cards (or badges) that transmit 14 bytes, whereas the previous version handled only 5 bytes.
 
 This library only support TTL RS232 serial port.
 
@@ -11,19 +11,18 @@ This library only support TTL RS232 serial port.
 [Grove - 125KHz RFID Reader
 ](https://www.seeedstudio.com/s/Grove-125KHz-RFID-Reader-p-1008.html)
 
-
-
-When read the data from some RFID card, you will get data like `00 91 6f 0b f5`.
-
 Example:
-```
-your card number: 0009531147
-that your data  : 00 91 6f 0b f5
-```
-**Notice, f5 is the check bit**
+- When reading the data from some RFID card, you will get data like `2  30  32  30  30  36  41  44  42  34  46  46  43  3` (2 and 3 indicate the start and stop of a transmission; we are going to ignore them).
 
-`f5 = 00^91^6f^0b`
+- Each numbers are is a ASCII character in HEX: `30  32  30  30  36  41  44  42  34  46  46  43` ==> `0 2 0 0 6 A D B 4 F F C`
 
+- And need to be reunited in pairs: `0 2 0 0 6 A D B 4 F F C` ==> `02 00 6A DB 4F FC`
+
+- `FC` is the checksum using XOR: `02^00^6A^DB^4F == FC`
+
+- `02 00 6A DB 4F` are your card number: last four bytes (`00 6A DB 4F`) are the engraved number on the card
+
+- `00 6A DB 4F`: engraved number can be retrieved by converting hexadecimal to base-ten (`00 6A DB 4F`(hex) = `00000000 01101010 11011011 01001111`(bin) = `0007002959`(dec))
 
 #### Pins 
 
@@ -165,8 +164,9 @@ For more information please visit [wiki]([wiki](http://wiki.seeedstudio.com/Grov
 
 ----
 
-This library is written by [Ye Xiaobo][Github Homepage] for seeed studio<br>
+The original library was written by [Ye Xiaobo][Github Homepage] for seeed studio<br>
 and is licensed under [The MIT License](https://github.com/yexiaobo-seeedstudio/RFID_Library/blob/master/LICENSE). <br>
+This modified library was written by [Adrien FALLOT][Github Homepage].
 
 Contributing to this software is warmly welcomed. You can do this basically by<br>
 [forking](https://help.github.com/articles/fork-a-repo), committing modifications and then [pulling requests](https://help.github.com/articles/using-pull-requests) (follow the links above<br>
@@ -181,7 +181,3 @@ global distributors and partners to push open hardware movement.<br>
 
 [RFID Image]: http://www.seeedstudio.com/wiki/images/6/6a/RFID.jpg
 [Github Homepage]: https://github.com/yexiaobo-seeedstudio
-
-
-
-[![Analytics](https://ga-beacon.appspot.com/UA-46589105-3/RFID_Library)](https://github.com/igrigorik/ga-beacon)
