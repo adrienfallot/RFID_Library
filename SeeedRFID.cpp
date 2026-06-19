@@ -72,12 +72,6 @@ boolean SeeedRFID::checkBitValidationUART() {
     _data.valid = (5 == _data.dataLen && (_data.raw[4] == _data.raw[0]^_data.raw[1]^_data.raw[2]^_data.raw[3]));
     return _data.valid;
 }
-/*
-    boolean SeeedRFID::listen()
-    {
-	_rfidIO->listen();
-    }
-*/
 boolean SeeedRFID::read() {
 
 

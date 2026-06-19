@@ -79,9 +79,7 @@ class SeeedRFID {
 
     boolean isAvailable();
     RFIDdata data();
-    //boolean listen();
     unsigned long cardNumber();
-    //void listen();
 };
 
 #endif //__SeeedRFID_H__
