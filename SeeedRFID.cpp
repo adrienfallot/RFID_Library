@@ -61,7 +61,6 @@ SeeedRFID::SeeedRFID(int rxPin, int txPin) {
     _data.chk = 0;
     _data.valid = false;
 
-    _isAvailable = false;
     _type = RFID_UART;
 }
 
@@ -70,13 +69,8 @@ SeeedRFID::~SeeedRFID() {
 
 
 boolean SeeedRFID::checkBitValidationUART() {
-    if (5 == _data.dataLen && (_data.raw[4] == _data.raw[0]^_data.raw[1]^_data.raw[2]^_data.raw[3])) {
-        _data.valid = _isAvailable = true;
-        return true;
-    } else {
-        _data.valid = _isAvailable = false;
-        return false;
-    }
+    _data.valid = (5 == _data.dataLen && (_data.raw[4] == _data.raw[0]^_data.raw[1]^_data.raw[2]^_data.raw[3]));
+    return _data.valid;
 }
 /*
     boolean SeeedRFID::listen()
@@ -86,7 +80,6 @@ boolean SeeedRFID::checkBitValidationUART() {
 */
 boolean SeeedRFID::read() {
 
-    _isAvailable = false;
 
     if (_data.dataLen != 0) {
         _data.dataLen = 0;

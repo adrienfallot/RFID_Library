@@ -70,7 +70,6 @@ class SeeedRFID {
   private:
     SoftwareSerial* _rfidIO;  // software serail
     RFIDdata _data;
-    boolean _isAvailable;
     RFIDType _type;
     boolean checkBitValidationUART();
     boolean read();
